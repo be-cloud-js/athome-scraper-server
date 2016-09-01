@@ -25,6 +25,7 @@
     "q": "^1.4.1",
     "request": "latest",
     "simplecrawler": "latest",
-    "winston": "^2.2.0"
+    "winston": "^2.2.0",
+    "underscore": "latest"
   }
 }

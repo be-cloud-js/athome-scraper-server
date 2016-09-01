@@ -1,0 +1,30 @@
+{
+  "name": "athome-scraper",
+  "version": "0.0.0",
+  "description": "A scraper for athome entries.",
+  "main": "server.js",
+  "repository": "https://github.com/be-cloud-be/athome-scraper.git",
+  "license": "Apache-2.0",
+  "author": "Jerome Sonnet <jerome.sonnet@be-cloud.be>",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": "0.10.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/"
+  },
+  "dependencies": {
+    "cheerio": "latest",
+    "debug": "^2.2.0",
+    "easyxml": "latest",
+    "express": "latest",
+    "firebase": "^3.3.0",
+    "q": "^1.4.1",
+    "request": "latest",
+    "simplecrawler": "latest",
+    "winston": "^2.2.0"
+  }
+}

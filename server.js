@@ -3,7 +3,7 @@ const express = require('express');
 const fs = require('fs');
 const request = require('request');
 const cheerio = require('cheerio');
-const crawler = require("simplecrawler");
+var Crawler = require("simplecrawler");
 const EasyXml = require('easyxml');
 const firebase = require('firebase');
 const winston = require('winston');
@@ -39,7 +39,7 @@ app.get('/scrape/:announcerId', function(req, res){
         
         var properties = {};
         
-        var mainCrawler = crawler.crawl(url);
+        var mainCrawler = Crawler(url);
         
         mainCrawler.addFetchCondition(function(parsedURL) {
             return parsedURL.path.match(crawlPattern);
@@ -64,7 +64,7 @@ app.get('/scrape/:announcerId', function(req, res){
                 winston.log('debug', 'Start crawling - ', {
                     url : page,
                 })
-                var pageCrawler = crawler.crawl(page);
+                var pageCrawler = Crawler(page);
                 pageCrawler.maxDepth = 2; // do not index properties recursively
                 pageCrawler.addFetchCondition(function(parsedURL) {
                     return parsedURL.path.match(/[\/\w \.-]*[0-9]{7,7}$/i);

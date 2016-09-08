@@ -148,7 +148,7 @@ app.get('/scrape/:announcerId', function(req, res){
     });
 });
 
-server.listen(8081  || 3000, process.env.IP || "0.0.0.0", function(){
+server.listen(process.env.PORT  || 3000, process.env.IP || "0.0.0.0", function(){
     var addr = server.address();
     console.log("Connect to ", addr.address + ":" + addr.port);
 });

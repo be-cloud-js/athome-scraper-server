@@ -26,6 +26,7 @@
     "request": "latest",
     "simplecrawler": "latest",
     "winston": "^2.2.0",
-    "underscore": "latest"
+    "underscore": "latest",
+    "google-cloud": "latest"
   }
 }

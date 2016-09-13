@@ -3,9 +3,10 @@ const express = require('express');
 const fs = require('fs');
 const request = require('request');
 const cheerio = require('cheerio');
-var Crawler = require("simplecrawler");
+const Crawler = require("simplecrawler");
 const EasyXml = require('easyxml');
 const firebase = require('firebase');
+const gcloud = require('google-cloud');
 const winston = require('winston');
 const Q = require('q');
 const _ = require('underscore');
@@ -14,15 +15,74 @@ var app = express();
 var server = http.createServer(app)
 
 winston.level = 'debug'  
+//require('request-debug')(request);
 
 firebase.initializeApp({
   serviceAccount: "athome-scrapper-8be17f7116fe.json",
   databaseURL: "https://athome-scrapper.firebaseio.com"
 });
 
+// Create a database reference
 var db = firebase.database();
 var announcersRef = db.ref("athome-announcers");
 var propertiesRef = db.ref("athome-properties");
+
+// Create a storage reference
+var gcs = gcloud.storage({
+  projectId: 'athome-scrapper',
+  keyFilename: "athome-scrapper-8be17f7116fe.json"
+});
+var propertiesPictures = gcs.bucket('athome-scrapper.appspot.com');
+var atHomeImagesServer = "http://i1.static.athome.eu/images/annonces2/image_"
+
+function updateStorageURL(file, path, gsURL) {
+    file.acl.add({
+          entity: 'allUsers',
+          role: gcs.acl.READER_ROLE
+        }, function(err, aclObject) {});
+    propertiesRef.child(path).set(gsURL);
+    winston.log('debug', 'Picture downloaded ', {
+        path:path,
+        gsURL:gsURL,
+    });
+}
+
+// Save file to Firebase from a URL
+function saveFile(fileName, path, key, num) {
+    var gsURL = 'http://storage.googleapis.com/athome-scrapper.appspot.com/athome-properties/pictures/'+key+'/picture'+num+'.jpg';
+    var file = propertiesPictures.file('athome-properties/pictures/'+key+'/picture'+num+'.jpg');
+    var writeStream = fs.createWriteStream('./output.jpg');
+    
+    winston.log('debug', 'Download picture - ', {
+            url : atHomeImagesServer+fileName,
+    });
+    
+    request.get(atHomeImagesServer+fileName)
+    .pipe(file.createWriteStream({
+                metadata: {
+                    contentType: 'image/jpeg',
+                    metadata: {
+                    custom: 'metadata'
+                }
+            }
+    }))
+    .on('error', function(err) {
+        winston.log('debug', 'Error downloading picture - ', {
+            errannouncerId : err,
+        });
+    })
+    .on('finish', function() {
+        file.acl.add({
+          entity: 'allUsers',
+          role: gcs.acl.READER_ROLE
+        }, function(err, aclObject) {});
+        propertiesRef.child(path+'/pictures/picture'+num).set(gsURL);
+        winston.log('debug', 'Picture downloaded ', {
+            path:path,
+            gsURL:gsURL,
+        });
+    });
+}
 
 app.get('/announcers', function(req, res){
     announcersRef.once("value", function(data) {
@@ -71,6 +131,8 @@ app.get('/scrape/:announcerId', function(req, res){
                 
                 var promisses = [];
                 
+                propertiesRef.child(req.params.announcerId)
+                
                 for (i = 0; i < mainPages.length; i++) {
                     var page = mainPages[i];
                     winston.log('debug', 'Start crawling - ', {
@@ -100,13 +162,22 @@ app.get('/scrape/:announcerId', function(req, res){
                                         property.title = $("meta[name='og:title']").attr("content");
                                         property.type = html.match(/googletag\.pubads\(\)\.setTargeting\("Type", \"(.*)\" \)/i)[1];
                                         property.categories = queueItem.url.match(/http:\/\/www\.athome\.lu\/([\w \.-]*)\/([\w \.-]*)\/([\w \.-]*)\/([\w \.-]*)\/([\w \.-]*)/i);
+                                        // remove all properties with value at '-1' as they hold no information
+                                        property = _.pick(property, function(value, key) {return value != -1;})
+                                        
+                                        propertiesRef.child(req.params.announcerId+'/'+property.id).set(property)
+                                        
+                                        // Get all image into Firebase storage
+                                        for(var i = 1; i <= 10; i++){
+                                            if (property.pictures['picture'+i]){
+                                                saveFile(property.pictures['picture'+i],req.params.announcerId+'/'+property.id,property.id,i);
+                                            }
+                                        }
+                                        
                                         winston.log('debug', 'Property crawled - ', {
                                             title : property.title,
                                         })
                                         
-                                        property = _.pick(property, function(value, key) {return value != -1;})
-                                        
-                                        properties[property.id] = property;
                                     } catch(err) {
                                         winston.log('debug', 'Error crawling property - ', {
                                             error : err,
@@ -135,15 +206,13 @@ app.get('/scrape/:announcerId', function(req, res){
                 }
                 
                 Q.all(promisses).then(function() {
-                    winston.log('debug', 'Crawling properties is finished - ', {
-                        propertyCount : properties.length,
+                    winston.log('debug', 'Crawling properties is finished ! ', {
                     })
-                    propertiesRef.child(req.params.announcerId).set(properties).then(function() {
-                        res.json(properties);
+                    propertiesRef.child(req.params.announcerId).once('value').then(function(snapshot) {
+                        res.json(snapshot.val());
                     });
                 })
             });
-            
             mainCrawler.start();
     });
 });

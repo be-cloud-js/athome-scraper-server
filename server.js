@@ -14,7 +14,7 @@ const _ = require('underscore');
 var app = express();
 var server = http.createServer(app)
 
-winston.level = 'debug'  
+//winston.level = 'debug'  
 //require('request-debug')(request);
 
 firebase.initializeApp({

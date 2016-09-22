@@ -27,6 +27,6 @@
     "simplecrawler": "latest",
     "winston": "^2.2.0",
     "underscore": "latest",
-    "google-cloud": "latest"
+    "@google-cloud/storage": "latest"
   }
 }

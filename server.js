@@ -6,7 +6,10 @@ const cheerio = require('cheerio');
 const Crawler = require("simplecrawler");
 const EasyXml = require('easyxml');
 const firebase = require('firebase');
-const gcloud = require('google-cloud');
+const gcs = require('@google-cloud/storage')({
+  projectId: 'athome-scrapper',
+  keyFilename: "athome-scrapper-8be17f7116fe.json"
+});
 const winston = require('winston');
 const Q = require('q');
 const _ = require('underscore');
@@ -28,10 +31,6 @@ var announcersRef = db.ref("athome-announcers");
 var propertiesRef = db.ref("athome-properties");
 
 // Create a storage reference
-var gcs = gcloud.storage({
-  projectId: 'athome-scrapper',
-  keyFilename: "athome-scrapper-8be17f7116fe.json"
-});
 var propertiesPictures = gcs.bucket('athome-scrapper.appspot.com');
 var atHomeImagesServer = "http://i1.static.athome.eu/images/annonces2/image_"
 
